@@ -34,6 +34,9 @@ struct Options {
 
   // Show options
   friend std::ostream &operator<<(std::ostream &, const Options &);
+
+  // Check for invalid combination of options
+  void Check() const;
 };
 
 std::ostream &operator<<(std::ostream &, const Options &);

@@ -26,7 +26,7 @@ static inline void SetBooleanFromEnv(const char *name, bool *dest) {
       return;
     }
   }
-  LOG(FATAL) << "Invalid " << name << ": expected bool, got " << env << ".";
+  LOG(FATAL) << "Invalid " << name << ": expected bool, got " << env;
 }
 
 template <class T>
@@ -36,7 +36,7 @@ static inline void SetNumberFromEnv(const char *name, T *dest) {
   try {
     *dest = boost::lexical_cast<T>(env);
   } catch (const boost::bad_lexical_cast &e) {
-    LOG(FATAL) << "Invalid " << name << ": expected number, got " << env << ".";
+    LOG(FATAL) << "Invalid " << name << ": expected number, got " << env;
   }
 }
 
@@ -52,7 +52,15 @@ Options Options::FromEnv() {
   SetBooleanFromEnv("pa_variational_bayes", &ret.variational_bayes);
   SetNumberFromEnv("pa_alpha", &ret.alpha);
   SetBooleanFromEnv("pa_no_null_word", &ret.no_null_word);
+  ret.Check();
   return ret;
+}
+
+void Options::Check() {
+  if (favor_diagonal && (prob_align_null < 0 || prob_align_null > 1))
+    LOG(FATAL) << "prob_align_null must be probability: " << prob_align_null;
+  if (variational_bayes && (alpha <= 0))
+    LOG(FATAL) << "alpha must be positive: " << alpha;
 }
 
 ostream &operator<<(ostream &output, const Options &opts) {
