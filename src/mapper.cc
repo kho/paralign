@@ -108,3 +108,16 @@ class Mapper {
   const double prob_align_not_null_;
 };
 } // namespace paralign
+
+using namespace paralign;
+
+int main() {
+  Options opts = Options::FromEnv();
+  TTable table(opts.ttable_prefix, opts.ttable_parts);
+  MapperSource input(cin);
+  MapperSink output(cout);
+
+  Mapper(opts, table, &input, &output).Run();
+
+  return 0;
+}
