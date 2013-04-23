@@ -140,3 +140,35 @@ BOOST_AUTO_TEST_CASE( ReducerSourceGrouping ) {
     }
   }
 }
+
+BOOST_AUTO_TEST_CASE( SinkWriteDouble ) {
+  ostringstream os;
+  Sink out(os);
+  out.WriteToks(0.25);
+  out.WriteEmpFeat(0.5);
+  out.WriteLogLikelihood(-0.125);
+
+  istringstream is(os.str());
+  ReducerSource in(is);
+  double v;
+  // toks 0.25
+  BOOST_REQUIRE(!in.Done());
+  BOOST_CHECK_EQUAL(in.Key(), kToksKey);
+  in.Read(&v);
+  BOOST_CHECK_EQUAL(v, 0.25);
+  // emp_feat 0.5
+  in.Next();
+  BOOST_REQUIRE(!in.Done());
+  BOOST_CHECK_EQUAL(in.Key(), kEmpFeatKey);
+  in.Read(&v);
+  BOOST_CHECK_EQUAL(v, 0.5);
+  // log_likelihood -0.125
+  in.Next();
+  BOOST_REQUIRE(!in.Done());
+  BOOST_CHECK_EQUAL(in.Key(), kLogLikelihoodKey);
+  in.Read(&v);
+  BOOST_CHECK_EQUAL(v, -0.125);
+  // end
+  in.Next();
+  BOOST_REQUIRE(in.Done());
+}
