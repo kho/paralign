@@ -103,7 +103,7 @@ using namespace paralign;
 
 int main() {
   Options opts = Options::FromEnv();
-  TTableWriter writer(opts.ttable_prefix);
+  TTableWriter writer(opts.ttable_prefix, opts.local);
   ReducerSource input(cin);
   ReducerSink output(cout);
 
