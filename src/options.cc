@@ -40,6 +40,12 @@ static inline void SetNumberFromEnv(const char *name, T *dest) {
   }
 }
 
+static inline void SetStringFromEnv(const char *name, string *dest) {
+  const char *env = getenv(name);
+  if (env == NULL) return;
+  *dest = env;
+}
+
 namespace paralign {
 
 Options Options::FromEnv() {
@@ -52,15 +58,19 @@ Options Options::FromEnv() {
   SetBooleanFromEnv("pa_variational_bayes", &ret.variational_bayes);
   SetNumberFromEnv("pa_alpha", &ret.alpha);
   SetBooleanFromEnv("pa_no_null_word", &ret.no_null_word);
+  SetStringFromEnv("pa_ttable_prefix", &ret.ttable_prefix);
+  SetNumberFromEnv("pa_ttable_parts", &ret.ttable_parts);
   ret.Check();
   return ret;
 }
 
-void Options::Check() {
+void Options::Check() const {
   if (favor_diagonal && (prob_align_null < 0 || prob_align_null > 1))
     LOG(FATAL) << "prob_align_null must be probability: " << prob_align_null;
   if (variational_bayes && (alpha <= 0))
     LOG(FATAL) << "alpha must be positive: " << alpha;
+  if (ttable_parts <= 0)
+    LOG(FATAL) << "ttable_parts not given or invalid: " << ttable_parts;
 }
 
 ostream &operator<<(ostream &output, const Options &opts) {
@@ -71,7 +81,9 @@ ostream &operator<<(ostream &output, const Options &opts) {
          << "optimize_tension = " << opts.optimize_tension << endl
          << "variational_bayes = " << opts.variational_bayes << endl
          << "alpha = " << opts.alpha << endl
-         << "no_null_word = " << opts.no_null_word << endl;
+         << "no_null_word = " << opts.no_null_word << endl
+         << "ttable_prefix = " << opts.ttable_prefix << endl
+         << "ttable_parts = " << opts.ttable_parts << endl;
   return output;
 }
 } // namespace paralign
