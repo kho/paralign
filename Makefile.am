@@ -1,10 +1,20 @@
 ACLOCAL_AMFLAGS = -I m4
-AM_CPPFLAGS = -I src
 
 noinst_LTLIBRARIES = libparalign.la
 
-libparalign_la_SOURCES = src/log.h src/options.h src/options.cc
+libparalign_la_SOURCES = src/io.h src/options.h src/options.cc src/ttable.h src/types.h src/contrib/log.h src/contrib/da.h
 
-check_PROGRAMS = options_test
+bin_PROGRAMS = estimate
+
+estimate_SOURCES = src/estimate.cc
+
+check_PROGRAMS = options_test io_test
+
 options_test_SOURCES = src/test/options_test.cc
+options_test_CPPFLAGS = -I src
 options_test_LDADD = libparalign.la
+
+io_test_SOURCES = src/test/io_test.cc
+io_test_CPPFLAGS = -I src
+io_test_LDADD = libparalign.la
+io_test_LDFLAGS = -lboost_unit_test_framework-mt
