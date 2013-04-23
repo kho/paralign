@@ -7,9 +7,9 @@
 #include <vector>
 #include <boost/lexical_cast.hpp>
 
-#include "log.h"
 #include "ttable.h"
 #include "types.h"
+#include "contrib/log.h"
 
 namespace paralign {
 // Constants for keys

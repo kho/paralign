@@ -1,10 +1,10 @@
 #include <map>
 
 #include "io.h"
-#include "log.h"
 #include "options.h"
 #include "ttable.h"
 #include "types.h"
+#include "contrib/log.h"
 
 using namespace std;
 

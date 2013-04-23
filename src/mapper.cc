@@ -4,11 +4,11 @@
 #include <vector>
 #include <boost/foreach.hpp>
 
-#include "da.h"
 #include "io.h"
 #include "options.h"
 #include "ttable.h"
 #include "types.h"
+#include "contrib/da.h"
 
 using namespace std;
 

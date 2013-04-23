@@ -5,7 +5,7 @@
 #include <ostream>
 #include <boost/lexical_cast.hpp>
 
-#include "log.h"
+#include "contrib/log.h"
 
 using namespace std;
 
