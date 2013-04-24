@@ -20,6 +20,18 @@ inline SentSz SecondSz(SentSzPair p) {
   return p & 0x0000ffff;
 }
 
+inline int64_t DoubleAsInt64(double v) {
+  union { int64_t i; double d; } w;
+  w.d = v;
+  return w.i;
+}
+
+inline double DoubleFromInt64(int64_t v) {
+  union { int64_t i; double d; } w;
+  w.i = v;
+  return w.d;
+}
+
 }      // namespace paralign
 
 #endif  // _PARALIGN_TYPES_H_

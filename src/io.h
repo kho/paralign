@@ -84,12 +84,12 @@ class ReducerSource {
   }
 
   void Read(TTableEntry *entry) const {
+    std::istringstream strm(buf_);
+    strm >> *entry;
   }
 
   void Read(double *dest) const {
-    union { int64_t i; double d; } v;
-    v.i = boost::lexical_cast<int64_t>(buf_);
-    *dest = v.d;
+    *dest = DoubleFromInt64(boost::lexical_cast<int64_t>(buf_));
   }
 
   void Next() {
@@ -153,12 +153,6 @@ class Sink {
   }
 
  private:
-  int64_t DoubleAsInt64(double v) {
-    union { int64_t i; double d; } w;
-    w.d = v;
-    return w.i;
-  }
-
   std::ostream &out_;
 };
 
