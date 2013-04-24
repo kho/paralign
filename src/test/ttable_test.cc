@@ -5,13 +5,55 @@
 #include <map>
 #include <string>
 #include <sstream>
+
 #include "ttable.h"
 
 using namespace std;
 using namespace paralign;
 
-BOOST_AUTO_TEST_CASE( WordIdDoubleSize ) {
-  BOOST_CHECK_EQUAL(sizeof(WordIdDouble), sizeof(WordId) + sizeof(double));
+BOOST_AUTO_TEST_CASE( KVSize ) {
+  BOOST_CHECK_EQUAL(sizeof(KV<WordId, double>), sizeof(WordId) + sizeof(double));
+  BOOST_CHECK_EQUAL(sizeof(KV<char, int>), sizeof(char) + sizeof(int));
+}
+
+BOOST_AUTO_TEST_CASE( KVBinarySearch ) {
+  typedef KV<int, int> P;
+  P arr[] = { P(0, 0), P(2, 2), P(3, -3), P(3, 3), P(4, 4) };
+  size_t num = sizeof(arr) / sizeof(P);
+  P *ret = NULL;
+
+  // Empty
+  ret = LookUp(0, arr, 0);
+  BOOST_REQUIRE(ret == NULL);
+  ret = LookUp(1, arr, 0);
+  BOOST_REQUIRE(ret == NULL);
+
+  // Non-empty
+  ret = LookUp(0, arr, num);
+  BOOST_REQUIRE(ret != NULL);
+  BOOST_CHECK_EQUAL(ret->k, 0);
+  BOOST_CHECK_EQUAL(ret->v, 0);
+
+  ret = LookUp(1, arr, num);
+  BOOST_REQUIRE(ret == NULL);
+
+  ret = LookUp(2, arr, num);
+  BOOST_REQUIRE(ret != NULL);
+  BOOST_CHECK_EQUAL(ret->k, 2);
+  BOOST_CHECK_EQUAL(ret->v, 2);
+
+  ret = LookUp(3, arr, num);
+  BOOST_REQUIRE(ret != NULL);
+  BOOST_CHECK_EQUAL(ret->k, 3);
+  BOOST_CHECK_EQUAL(ret->v, 3);
+
+  ret = LookUp(4, arr, num);
+  BOOST_REQUIRE(ret != NULL);
+  BOOST_CHECK_EQUAL(ret->k, 4);
+  BOOST_CHECK_EQUAL(ret->v, 4);
+
+  ret = LookUp(5, arr, num);
+  BOOST_REQUIRE(ret == NULL);
 }
 
 BOOST_AUTO_TEST_CASE( TTableEntryBasic ) {
