@@ -28,6 +28,7 @@ ltmain.sh
 m4/l*
 missing
 .dirstamp
+stamp-h1
 
 # Executables
 *_test
