@@ -69,6 +69,8 @@ void Options::Check() const {
     LOG(FATAL) << "prob_align_null must be probability: " << prob_align_null;
   if (variational_bayes && (alpha <= 0))
     LOG(FATAL) << "alpha must be positive: " << alpha;
+  if (ttable_dir.empty())
+    LOG(FATAL) << "ttable_dir is not set";
   if (ttable_parts <= 0)
     LOG(FATAL) << "ttable_parts not given or invalid: " << ttable_parts;
 }

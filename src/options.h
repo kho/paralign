@@ -32,7 +32,7 @@ struct Options {
   Options()
       : reverse(false), favor_diagonal(true), prob_align_null(0.08),
         diagonal_tension(4.0), optimize_tension(true), variational_bayes(true),
-        alpha(0.01), no_null_word(false), ttable_dir("."), ttable_parts(0) {}
+        alpha(0.01), no_null_word(false), ttable_dir(""), ttable_parts(0) {}
 
   // Construct from environment variables
   static Options FromEnv();
