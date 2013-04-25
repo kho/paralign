@@ -80,6 +80,7 @@ class Reducer {
   }
 
   void Flush() {
+    tbl_writer_->WriteIndex();
     out_->WriteSizeCounts(size_counts_.begin(), size_counts_.end());
     out_->WriteToks(toks_);
     out_->WriteEmpFeat(emp_feat_);
@@ -101,12 +102,19 @@ class Reducer {
 
 using namespace paralign;
 
+static string GetPartition() {
+  char *env = getenv("mapred_task_partition");
+  if (env == NULL) env = getenv("mapreduce_task_partition");
+  if (env == NULL) LOG(FATAL) << "Cannot find partition!";
+  return string(env);
+}
+
 int main() {
   Options opts = Options::FromEnv();
   const char *mapreduce_task_output_dir = getenv("mapreduce_task_output_dir");
   if (mapreduce_task_output_dir == NULL)
     LOG(FATAL) << "Cannot read mapreduce_task_output_dir from env; are you using hadoop?";
-  TTableWriter writer(mapreduce_task_output_dir);
+  TTableWriter writer(mapreduce_task_output_dir, GetPartition());
   ReducerSource input(cin);
   ReducerSink output(cout);
 

@@ -314,7 +314,7 @@ class PartialTTable : boost::noncopyable {
 };
 
 // Distributed translation table
-class TTable {
+class TTable : boost::noncopyable {
  public:
   TTable(const std::string &in_dir, size_t parts) : tables_(new PartialTTable[parts]), parts_(parts) {
     for (size_t i = 0; i < parts; ++i) {
@@ -338,10 +338,19 @@ class TTable {
 };
 
 // Writer to a single piece of the distributed translation table
-class TTableWriter {
+class TTableWriter : boost::noncopyable {
  public:
-  TTableWriter(const std::string &output_dir) : fs_(NULL), index_(NULL), entry_(NULL) {
-    std::string part(GetPartition());
+  TTableWriter(const std::string &output_dir, const std::string &part)
+      : fs_(NULL), index_(NULL), entry_(NULL) {
+    Open(output_dir, part);
+  }
+
+  ~TTableWriter() {
+    Close();
+  }
+
+  void Open(const std::string &output_dir, const std::string &part) {
+    Close();
     std::string user(getenv("USER"));
     std::string protocol = "file";
     std::string path = output_dir;
@@ -385,15 +394,6 @@ class TTableWriter {
       LOG(FATAL) << "Cannot open entry file for wite: " << path << "/entry." << part;
   }
 
-  ~TTableWriter() {
-    if (index_)
-      hdfsCloseFile(fs_, index_);
-    if (entry_)
-      hdfsCloseFile(fs_, entry_);
-    if (fs_)
-      hdfsDisconnect(fs_);
-  }
-
   void Write(WordId src, const TTableEntry &entry) {
     tOffset begin_offset = hdfsTell(fs_, entry_);
     if (begin_offset < 0)
@@ -419,14 +419,22 @@ class TTableWriter {
     }
   }
 
- private:
-  std::string GetPartition() const {
-    char *env = getenv("mapred_task_partition");
-    if (env == NULL) env = getenv("mapreduce_task_partition");
-    if (env == NULL) LOG(FATAL) << "Cannot find partition!";
-    return std::string(env);
+  void Close() {
+    if (index_) {
+      hdfsCloseFile(fs_, index_);
+      index_ = NULL;
+    }
+    if (entry_) {
+      hdfsCloseFile(fs_, entry_);
+      entry_ = NULL;
+    }
+    if (fs_) {
+      hdfsDisconnect(fs_);
+      fs_ = NULL;
+    }
   }
 
+ private:
   void AddToIndex(WordId src, off_t begin_offset, size_t num_record) {
     in_mem_index_[src] = KV<off_t, size_t>(begin_offset, num_record);
   }
