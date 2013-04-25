@@ -60,7 +60,6 @@ Options Options::FromEnv() {
   SetBooleanFromEnv("pa_no_null_word", &ret.no_null_word);
   SetStringFromEnv("pa_ttable_prefix", &ret.ttable_prefix);
   SetNumberFromEnv("pa_ttable_parts", &ret.ttable_parts);
-  SetBooleanFromEnv("pa_local", &ret.local);
   ret.Check();
   return ret;
 }

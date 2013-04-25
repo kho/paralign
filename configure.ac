@@ -16,6 +16,7 @@ BOOST_REQUIRE([1.44])
 BOOST_TEST
 
 # Checks for header files.
+AC_CHECK_HEADERS([hdfs.h])
 AC_CHECK_HEADERS([stdint.h])
 
 # Checks for typedefs, structures, and compiler characteristics.

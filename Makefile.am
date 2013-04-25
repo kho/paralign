@@ -9,14 +9,9 @@ bin_PROGRAMS = estimate
 
 estimate_SOURCES = src/estimate.cc
 
-check_PROGRAMS = options_test io_test ttable_test
-TESTCPPFLAGS = -I src
+check_PROGRAMS = io_test ttable_test
+TESTCPPFLAGS = -I src $(AM_CPPFLAGS)
 TESTLDFLAGS = $(BOOST_UNIT_TEST_FRAMEWORK_LDFLAGS) $(BOOST_UNIT_TEST_FRAMEWORK_LIBS)
-
-options_test_SOURCES = src/test/options_test.cc
-options_test_LDADD = libparalign.la
-options_test_CPPFLAGS = $(TESTCPPFLAGS)
-options_test_LDFLAGS = $(TESTLDFLAGS)
 
 io_test_SOURCES = src/test/io_test.cc
 io_test_LDADD = libparalign.la

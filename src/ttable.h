@@ -3,12 +3,15 @@
 
 #include <cerrno>
 #include <cstring>
+#include <cstdlib>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <hdfs.h>
 
 #include <algorithm>
 #include <iostream>
+#include <fstream>
 #include <map>
 #include <string>
 #include <utility>
@@ -73,6 +76,10 @@ KV<K, V> *LookUp(K key, KV<K, V> *base, size_t num) {
     return NULL;
 }
 
+
+typedef KV<WordId, KV<off_t, size_t> > IndexRecord;
+typedef KV<WordId, double> EntryRecord;
+
 // A table entry holds an array of `KV<WordId, double>`; all items are
 // sorted by word id for efficient plus.
 class TTableEntry {
@@ -88,7 +95,7 @@ class TTableEntry {
     typedef std::pair<WordId, double> P;
     BOOST_FOREACH(const P &p, m) {
       if (p.second != 0)
-        items_.push_back(WordIdDouble(p.first, p.second));
+        items_.push_back(EntryRecord(p.first, p.second));
     }
   }
 
@@ -98,6 +105,14 @@ class TTableEntry {
 
   size_t Size() const {
     return items_.size();
+  }
+
+  EntryRecord &operator[](size_t i) {
+    return items_[i];
+  }
+
+  const EntryRecord &operator[](size_t i) const {
+    return items_[i];
   }
 
   bool operator==(const TTableEntry &that) const {
@@ -110,12 +125,12 @@ class TTableEntry {
   void Normalize() {
     if (Empty()) return;
     double sum = 0;
-    BOOST_FOREACH(const WordIdDouble &i, items_) {
+    BOOST_FOREACH(const EntryRecord &i, items_) {
       sum += i.v;
     }
     if (sum == 0)
       LOG(WARNING) << "Division by zero in TTableEntry::Normalize";
-    BOOST_FOREACH(WordIdDouble &i, items_) {
+    BOOST_FOREACH(EntryRecord &i, items_) {
       i.v /= sum;
     }
   }
@@ -125,10 +140,10 @@ class TTableEntry {
   void NormalizeVB(double alpha) {
     if (Empty()) return;
     double sum = alpha * items_.size();
-    BOOST_FOREACH(const WordIdDouble &i, items_) {
+    BOOST_FOREACH(const EntryRecord &i, items_) {
       sum += i.v;
     }
-    BOOST_FOREACH(WordIdDouble &i, items_) {
+    BOOST_FOREACH(EntryRecord &i, items_) {
       i.v = exp(boost::math::digamma(i.v + alpha) - boost::math::digamma(sum));
     }
   }
@@ -143,15 +158,14 @@ class TTableEntry {
   friend void PlusEq(const TTableEntry &, const TTableEntry &, TTableEntry *);
 
  private:
-  typedef KV<WordId, double> WordIdDouble;
-  std::vector<WordIdDouble> items_;
+  std::vector<EntryRecord> items_;
 };
 
-// Writes # of items, followed by tab-separated `WordIdDouble` pairs,
+// Writes # of items, followed by tab-separated `EntryRecord` pairs,
 // without any line breaks in between.
 inline std::ostream &operator<<(std::ostream &out, const TTableEntry &e) {
   out << e.items_.size();
-  BOOST_FOREACH(const TTableEntry::WordIdDouble &i, e.items_) {
+  BOOST_FOREACH(const EntryRecord &i, e.items_) {
     out << ' ' << i.k << ' ' << DoubleAsInt64(i.v);
   }
   return out;
@@ -176,7 +190,7 @@ inline void PlusEq(const TTableEntry &x, const TTableEntry &y, TTableEntry *z) {
   z->items_.clear();
   size_t xi = 0, yi = 0;
   while (xi < x.items_.size() && yi < y.items_.size()) {
-    const TTableEntry::WordIdDouble &xp = x.items_[xi], &yp = y.items_[yi];
+    const EntryRecord &xp = x.items_[xi], &yp = y.items_[yi];
     if (xp.k < yp.k) {
       z->items_.push_back(xp);
       ++xi;
@@ -186,7 +200,7 @@ inline void PlusEq(const TTableEntry &x, const TTableEntry &y, TTableEntry *z) {
     } else {
       double v = xp.v + yp.v;
       if (v != 0)
-        z->items_.push_back(TTableEntry::WordIdDouble(xp.k, v));
+        z->items_.push_back(EntryRecord(xp.k, v));
       ++xi;
       ++yi;
     }
@@ -211,9 +225,6 @@ inline void PlusEq(const TTableEntry &x, const TTableEntry &y, TTableEntry *z) {
 // swapping is fine.
 class PartialTTable : boost::noncopyable {
  public:
-  typedef KV<WordId, std::pair<off_t, size_t> > IndexRecord;
-  typedef KV<WordId, double> EntryRecord;
-
   PartialTTable()
       : index_base_(NULL), entry_base_(NULL),
         num_entry_(0), index_length_(0), entry_length_(0) {}
@@ -251,8 +262,8 @@ class PartialTTable : boost::noncopyable {
     const IndexRecord *index_record = LookUp(src, index_base_, num_entry_);
     if (index_record == NULL)
       return kDefaultProbability;
-    off_t offset = index_record->v.first;
-    size_t num_entry_record = index_record->v.second;
+    off_t offset = index_record->v.k;
+    size_t num_entry_record = index_record->v.v;
     const EntryRecord *entry_record = LookUp(tgt, entry_base_ + offset, num_entry_record);
     if (entry_record == NULL)
       return kDefaultProbability;
@@ -283,6 +294,9 @@ class PartialTTable : boost::noncopyable {
 
     *addr = map;
     *length = st.st_size;
+
+    LOG(INFO) << "Loaded " << path << " as mmap @"
+              << std::hex << map << "[" << *length << "]";
   }
 
   void DoMunmap(void *addr, size_t length) {
@@ -302,12 +316,13 @@ class PartialTTable : boost::noncopyable {
 // Distributed translation table
 class TTable {
  public:
-  TTable(const std::string &prefix, size_t parts) : tables_(new PartialTTable[parts]), parts_(parts) {
+  TTable(const std::string &in_dir, size_t parts) : tables_(new PartialTTable[parts]), parts_(parts) {
     for (size_t i = 0; i < parts; ++i) {
-      std::string index_path = prefix + ".index." + boost::lexical_cast<string>(i);
-      std::string entry_path = prefix + ".entry." + boost::lexical_cast<string>(i);
+      std::string index_path = in_dir + "/index." + boost::lexical_cast<string>(i);
+      std::string entry_path = in_dir + "/entry." + boost::lexical_cast<string>(i);
       tables_[i].Load(index_path, entry_path);
     }
+    LOG(INFO) << "Read " << parts << " pieces of translation table";
   }
 
   double Query(WordId src, WordId tgt) const {
@@ -325,9 +340,100 @@ class TTable {
 // Writer to a single piece of the distributed translation table
 class TTableWriter {
  public:
-  TTableWriter(const std::string &prefix, bool local);
-  void Write(WordId src, const TTableEntry &entry);
+  TTableWriter(const std::string &output_dir) : fs_(NULL), index_(NULL), entry_(NULL) {
+    std::string part(GetPartition());
+    std::string user(getenv("USER"));
+    std::string protocol = "file";
+    std::string path = output_dir;
+    std::string namenode = "";
+    size_t colon_pos = path.find(':');
+    if (colon_pos != std::string::npos) {
+      protocol = path.substr(0, colon_pos);
+      path.erase(0, colon_pos + 1);
+    }
+    if (protocol == "file") {
+      namenode = "file://";
+    } else if (protocol == "hdfs") {
+      size_t not_slash_pos = path.find_first_not_of('/');
+      if (not_slash_pos == std::string::npos)
+        LOG(FATAL) << "Ill-formed path: " << path;
+      path.erase(0, not_slash_pos);
+      size_t slash_pos = path.find('/');
+      namenode = "hdfs://" + path.substr(0, slash_pos);
+      path.erase(0, slash_pos);
+    } else {
+      LOG(FATAL) << "Unknown protocol: " << protocol;
+    }
+    if (path.empty())
+      LOG(FATAL) << "Empty path in " << output_dir;
+
+    LOG(INFO) << "namenode: " << namenode;
+    LOG(INFO) << "user: " << user;
+    LOG(INFO) << "out dir: " << path;
+    LOG(INFO) << "part: " << part;
+
+    fs_ = hdfsConnectAsUser(namenode.c_str(), 0, user.c_str());
+    if (fs_ == NULL)
+      LOG(FATAL) << "Cannot connect to file system: " << namenode;
+
+    index_ = hdfsOpenFile(fs_, (path + "/index." + part).c_str(), O_WRONLY, 0, 0, 0);
+    if (index_ == NULL)
+      LOG(FATAL) << "Cannot open index file for write: " << path << "/index." << part;
+
+    entry_ = hdfsOpenFile(fs_, (path + "/entry." + part).c_str(), O_WRONLY, 0, 0, 0);
+    if (entry_ == NULL)
+      LOG(FATAL) << "Cannot open entry file for wite: " << path << "/entry." << part;
+  }
+
+  ~TTableWriter() {
+    if (index_)
+      hdfsCloseFile(fs_, index_);
+    if (entry_)
+      hdfsCloseFile(fs_, entry_);
+    if (fs_)
+      hdfsDisconnect(fs_);
+  }
+
+  void Write(WordId src, const TTableEntry &entry) {
+    tOffset begin_offset = hdfsTell(fs_, entry_);
+    if (begin_offset < 0)
+      LOG(FATAL) << "hdfsTell failed in TTableWriter::Write";
+    AddToIndex(src, begin_offset, entry.Size());
+    for (size_t i = 0; i < entry.Size(); ++i) {
+      const EntryRecord &record = entry[i];
+      tSize r = hdfsWrite(fs_, entry_, static_cast<const void *>(&record), sizeof(EntryRecord));
+      if (r < 0)
+        LOG(FATAL) << "hdfsWrite failed in TTableWriter::Write";
+    }
+  }
+
+  void WriteIndex() {
+    IndexRecord record;
+    typedef std::pair<WordId, KV<off_t, size_t> > P;
+    BOOST_FOREACH(const P &p, in_mem_index_) {
+      record.k = p.first;
+      record.v = p.second;
+      tSize r = hdfsWrite(fs_, index_, static_cast<const void *>(&record), sizeof(IndexRecord));
+      if (r < 0)
+        LOG(FATAL) << "hdfsWrite failed in TTableWriter::WriteIndex";
+    }
+  }
+
+ private:
+  std::string GetPartition() const {
+    char *env = getenv("mapred_task_partition");
+    if (env == NULL) env = getenv("mapreduce_task_partition");
+    if (env == NULL) LOG(FATAL) << "Cannot find partition!";
+    return std::string(env);
+  }
+
+  void AddToIndex(WordId src, off_t begin_offset, size_t num_record) {
+    in_mem_index_[src] = KV<off_t, size_t>(begin_offset, num_record);
+  }
+
+  hdfsFS fs_;
+  hdfsFile index_, entry_;
+  std::map<WordId, KV<off_t, size_t> > in_mem_index_;
 };
 }// namespace paralign
-
 #endif  // _PARALIGN_TTABLE_H_

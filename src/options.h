@@ -27,15 +27,12 @@ struct Options {
   std::string ttable_prefix;
   // Number of translation table pieces
   int ttable_parts;
-  // Local mode
-  bool local;
 
   // Default values
   Options()
       : reverse(false), favor_diagonal(true), prob_align_null(0.08),
         diagonal_tension(4.0), optimize_tension(true), variational_bayes(true),
-        alpha(0.01), no_null_word(false), ttable_prefix("ttable"), ttable_parts(0),
-        local(false) {}
+        alpha(0.01), no_null_word(false), ttable_prefix("ttable"), ttable_parts(0) {}
 
   // Construct from environment variables
   static Options FromEnv();
