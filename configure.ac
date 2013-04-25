@@ -15,6 +15,10 @@ AC_PROG_LIBTOOL
 BOOST_REQUIRE([1.44])
 BOOST_TEST
 
+LIBJVM=`find "$JAVA_HOME/" -name libjvm.so`
+AS_IF([test X$LIBJVM == X], AC_MSG_ERROR([Cannot find libjvm.so! Set proper JAVA_HOME when configure.]))
+AC_SUBST([LIBJVM])
+
 # Checks for header files.
 AC_CHECK_HEADERS([hdfs.h])
 AC_CHECK_HEADERS([stdint.h])
