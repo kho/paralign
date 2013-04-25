@@ -113,7 +113,11 @@ using namespace paralign;
 
 int main() {
   Options opts = Options::FromEnv();
-  TTable table(opts.ttable_prefix, opts.ttable_parts);
+
+  LOG(INFO) << "Options:" << endl
+            << opts << endl;
+
+  TTable table(opts.ttable_dir, opts.ttable_parts);
   MapperSource input(cin);
   MapperSink output(cout);
 

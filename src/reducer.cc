@@ -103,7 +103,10 @@ using namespace paralign;
 
 int main() {
   Options opts = Options::FromEnv();
-  TTableWriter writer(opts.ttable_prefix, opts.local);
+  const char *mapreduce_task_output_dir = getenv("mapreduce_task_output_dir");
+  if (mapreduce_task_output_dir == NULL)
+    LOG(FATAL) << "Cannot read mapreduce_task_output_dir from env; are you using hadoop?";
+  TTableWriter writer(mapreduce_task_output_dir);
   ReducerSource input(cin);
   ReducerSink output(cout);
 

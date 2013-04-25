@@ -1,13 +1,22 @@
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = $(BOOST_CPPFLAGS)
 
+JNIDIR=$(JAVA_HOME)/jre/lib/amd64/server
+
 noinst_LTLIBRARIES = libparalign.la
 
 libparalign_la_SOURCES = src/io.h src/options.h src/options.cc src/ttable.h src/types.h src/contrib/log.h src/contrib/da.h
 
-bin_PROGRAMS = estimate
+bin_PROGRAMS = estimate pa-mapper pa-reducer
 
 estimate_SOURCES = src/estimate.cc
+
+pa_mapper_SOURCES = src/mapper.cc
+pa_mapper_LDADD = libparalign.la
+
+pa_reducer_SOURCES = src/reducer.cc
+pa_reducer_LDADD = libparalign.la
+pa_reducer_LDFLAGS = -L$(JNIDIR) -Wl,-rpath -Wl,$(JNIDIR) -ljvm -lhdfs
 
 check_PROGRAMS = io_test ttable_test
 TESTCPPFLAGS = -I src $(AM_CPPFLAGS)

@@ -58,7 +58,7 @@ Options Options::FromEnv() {
   SetBooleanFromEnv("pa_variational_bayes", &ret.variational_bayes);
   SetNumberFromEnv("pa_alpha", &ret.alpha);
   SetBooleanFromEnv("pa_no_null_word", &ret.no_null_word);
-  SetStringFromEnv("pa_ttable_prefix", &ret.ttable_prefix);
+  SetStringFromEnv("pa_ttable_dir", &ret.ttable_dir);
   SetNumberFromEnv("pa_ttable_parts", &ret.ttable_parts);
   ret.Check();
   return ret;
@@ -82,9 +82,8 @@ ostream &operator<<(ostream &output, const Options &opts) {
          << "variational_bayes = " << opts.variational_bayes << endl
          << "alpha = " << opts.alpha << endl
          << "no_null_word = " << opts.no_null_word << endl
-         << "ttable_prefix = " << opts.ttable_prefix << endl
-         << "ttable_parts = " << opts.ttable_parts << endl
-         << "local = " << opts.local << endl;
+         << "ttable_dir = " << opts.ttable_dir << endl
+         << "ttable_parts = " << opts.ttable_parts << endl;
   return output;
 }
 } // namespace paralign
