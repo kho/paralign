@@ -2,6 +2,7 @@
 #define _PARALIGN_TTABLE_H_
 
 #include <cerrno>
+#include <cmath>
 #include <cstring>
 #include <cstdlib>
 #include <sys/mman.h>
@@ -255,7 +256,41 @@ class PartialTTable : boost::noncopyable {
                  << " is not a multiple of index record size ("
                  << sizeof(IndexRecord) << " bytes)";
     num_entry_ = index_length_ / sizeof(IndexRecord);
-    DoMmap(index, static_cast<void **>(static_cast<void *>(&entry_base_)), &entry_length_);
+    DoMmap(entry, static_cast<void **>(static_cast<void *>(&entry_base_)), &entry_length_);
+    if (entry_length_ % sizeof(EntryRecord) != 0)
+      LOG(FATAL) << "Entry file size (" << entry_length_ << " bytes)"
+                 << " is not a multiple of entry record size ("
+                 << sizeof(EntryRecord) << " bytes)";
+  }
+
+  void Dump(std::ostream &output) const {
+    if (index_base_ == NULL) {
+      output << "[ No index loaded ]\n";
+    } else if (entry_base_ == NULL) {
+      output << "[ No entry loaded ]\n";
+    } else {
+      for (size_t i = 0; i < num_entry_; ++i) {
+        WordId src = index_base_[i].k;
+        off_t offset = index_base_[i].v.k / sizeof(EntryRecord);
+        size_t num_entry = index_base_[i].v.v;
+        for (size_t j = 0; j < num_entry; ++j) {
+          const EntryRecord &record = (entry_base_ + offset)[j];
+          output << src << ' ' << record.k << ' ' << log(record.v) << ' '
+                 << record.v << ' ' << DoubleAsInt64(record.v) << '\n';
+        }
+      }
+      // output << "[ raw index ]\n";
+      // for (size_t i = 0; i < num_entry_; ++i)
+      //   output << i << '\t' << index_base_[i].k << " -> "
+      //          << std::hex << index_base_[i].v.k << ' ' << index_base_[i].v.v << '\n';
+      // output << "[ raw entry ]\n";
+      // for (size_t i = 0; i < entry_length_ / sizeof(EntryRecord); ++i) {
+      //   const EntryRecord &record = entry_base_[i];
+      //   output << std::hex << i * sizeof(EntryRecord) << '\t'
+      //          << record.k << ' ' << log(record.v) << ' '
+      //          << record.v << ' ' << DoubleAsInt64(record.v) << '\n';
+      // }
+    }
   }
 
   double Query(WordId src, WordId tgt) const {
@@ -284,7 +319,14 @@ class PartialTTable : boost::noncopyable {
       LOG(FATAL) << "Cannot fstat file " << path << ": " << err_msg;
     }
 
-    void *map = mmap(NULL, st.st_size, PROT_READ, 0, fd, 0);
+    if (st.st_size == 0) {
+      LOG(INFO) << "Zero size file at " << path;
+      *addr = NULL;
+      *length = 0;
+      return;
+    }
+
+    void *map = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
     if (map == MAP_FAILED) {
       const char *err_msg = std::strerror(errno);
       LOG(FATAL) << "Cannot mmap file " << path << ": " << err_msg;
@@ -332,6 +374,13 @@ class TTable : boost::noncopyable {
     return tables_[part].Query(src, tgt);
   }
 
+  void Dump(std::ostream &output) const {
+    for (size_t i = 0; i < parts_; ++i) {
+      output << "== PART " << i << " ==\n";
+      tables_[i].Dump(output);
+    }
+  }
+
  private:
   boost::scoped_array<PartialTTable> tables_;
   size_t parts_;
@@ -361,7 +410,7 @@ class TTableWriter : boost::noncopyable {
       path.erase(0, colon_pos + 1);
     }
     if (protocol == "file") {
-      namenode = "file://";
+      namenode = "file:///";
     } else if (protocol == "hdfs") {
       size_t not_slash_pos = path.find_first_not_of('/');
       if (not_slash_pos == std::string::npos)

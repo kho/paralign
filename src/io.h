@@ -58,6 +58,8 @@ class MapperSource {
     out->clear();
     while (strm >> tok)
       out->push_back(tok);
+    if (strm.fail() && !strm.eof())
+      LOG(FATAL) << "Failed to read input words! Are they integers?";
   }
 
   std::istream &in_;

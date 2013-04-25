@@ -3,7 +3,7 @@
 BASE=`dirname "$0"`
 
 # Add hadoop jars to classpath
-for i in /usr/hadoop*/*.jar /usr/hadoop*/*/*.jar; do
+for i in /usr/lib/hadoop*/*.jar /usr/lib/hadoop*/*/*.jar; do
     CLASSPATH=$CLASSPATH:$i
 done
 
