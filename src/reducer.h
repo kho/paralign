@@ -109,10 +109,14 @@ class Reducer {
     if (mode_ == kReducer)
       tbl_writer_->WriteIndex();
     if (mode_ == kReducer || mode_ == kCombiner) {
-      out_->WriteSizeCounts(size_counts_.begin(), size_counts_.end());
-      out_->WriteToks(toks_);
-      out_->WriteEmpFeat(emp_feat_);
-      out_->WriteLogLikelihood(log_likelihood_);
+      if (!size_counts_.empty())
+        out_->WriteSizeCounts(size_counts_.begin(), size_counts_.end());
+      if (toks_ != 0)
+        out_->WriteToks(toks_);
+      if (emp_feat_ != 0)
+        out_->WriteEmpFeat(emp_feat_);
+      if (log_likelihood_ != 0)
+        out_->WriteLogLikelihood(log_likelihood_);
     }
     if (mode_ == kTension) {
       emp_feat_ /= toks_;
