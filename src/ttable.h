@@ -271,7 +271,7 @@ class PartialTTable : boost::noncopyable {
     } else {
       for (size_t i = 0; i < num_entry_; ++i) {
         WordId src = index_base_[i].k;
-        off_t offset = index_base_[i].v.k / sizeof(EntryRecord);
+        off_t offset = index_base_[i].v.k;
         size_t num_entry = index_base_[i].v.v;
         for (size_t j = 0; j < num_entry; ++j) {
           const EntryRecord &record = (entry_base_ + offset)[j];
@@ -279,14 +279,14 @@ class PartialTTable : boost::noncopyable {
                  << record.v << ' ' << DoubleAsInt64(record.v) << '\n';
         }
       }
-      // output << "[ raw index ]\n";
+      // output << "[raw] [index]\n";
       // for (size_t i = 0; i < num_entry_; ++i)
-      //   output << i << '\t' << index_base_[i].k << " -> "
-      //          << std::hex << index_base_[i].v.k << ' ' << index_base_[i].v.v << '\n';
-      // output << "[ raw entry ]\n";
+      //   output << "[raw] " << i << '\t' << index_base_[i].k << " -> "
+      //          << index_base_[i].v.k << ' ' << index_base_[i].v.v << '\n';
+      // output << "[raw] [entry]\n";
       // for (size_t i = 0; i < entry_length_ / sizeof(EntryRecord); ++i) {
       //   const EntryRecord &record = entry_base_[i];
-      //   output << std::hex << i * sizeof(EntryRecord) << '\t'
+      //   output << "[raw] " << i << '\t'
       //          << record.k << ' ' << log(record.v) << ' '
       //          << record.v << ' ' << DoubleAsInt64(record.v) << '\n';
       // }
@@ -485,7 +485,9 @@ class TTableWriter : boost::noncopyable {
 
  private:
   void AddToIndex(WordId src, off_t begin_offset, size_t num_record) {
-    in_mem_index_[src] = KV<off_t, size_t>(begin_offset, num_record);
+    if (begin_offset % sizeof(EntryRecord) != 0)
+      LOG(FATAL) << "Unaligned offset: " << begin_offset;
+    in_mem_index_[src] = KV<off_t, size_t>(begin_offset / sizeof(EntryRecord), num_record);
   }
 
   hdfsFS fs_;
