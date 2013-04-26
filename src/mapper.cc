@@ -39,7 +39,7 @@ class Mapper {
  private:
   void Map(const vector<WordId> &src, const vector<WordId> &tgt) {
     toks_ += tgt.size();
-    ++size_counts_[MkSzPair(src.size(), tgt.size())];
+    ++size_counts_[MkSzPair(tgt.size(), src.size())];
 
     probs_.resize(src.size() + 1);
 
