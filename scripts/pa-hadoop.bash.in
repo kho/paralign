@@ -71,7 +71,7 @@ for i in `seq $ITERS`; do
 	FILES="$FILES,$pa_ttable_dir/entry.$j,$pa_ttable_dir/index.$j"
     done
     # Streaming command
-    hadoop jar "$STREAMING" \
+    /usr/bin/time -v hadoop jar "$STREAMING" \
 	-D mapreduce.job.name="align-`basename "$WORKDIR"`-$i" \
 	-D mapreduce.reduce.memory.mb="$MEM" \
 	-files "$FILES" \
