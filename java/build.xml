@@ -1,0 +1,105 @@
+<project name="paralign" default="go" xmlns:ivy="antlib:org.apache.ivy.ant">
+  <property name="artifactId" value="paralign" />
+  <property name="version" value="0.1" />
+
+  <property name="lib.dir" value="lib" />
+  <property name="build.dir" value="build"/>
+  <property name="src.dir" value="src"/>
+  <property name="dist.dir" value="dist"/>
+  <property name="javadoc.dir" location="docs/api/" />
+
+  <!-- paths used for compilation and run  -->
+  <path id="lib.path.id">
+    <fileset dir="${lib.dir}" />
+  </path>
+  <path id="run.path.id">
+    <path refid="lib.path.id" />
+    <fileset dir="${dist.dir}" />
+  </path>
+  <path id="libjars.path.id">
+    <fileset dir="${lib.dir}/" includes="cloud9*.jar"/>
+    <fileset dir="${lib.dir}/" includes="guava*.jar"/>
+  </path>
+
+  <property name="ivy.install.version" value="2.2.0"/>
+  <property name="ivy.jar.dir" value="${basedir}/ivy"/>
+  <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar"/>
+  <property name="ivy.settings.file" value="${basedir}/ivy/ivysettings.xml" />
+  <property name="ivy.dep.file" value="${basedir}/ivy/ivy.xml" />
+
+  <target name="init">
+    <tstamp/>
+    <condition property="platform" value="unix"><os family="unix" /></condition>
+    <condition property="platform" value="unix"><os family="mac" /></condition>
+    <condition property="platform" value="windows"><os family="windows" /></condition>
+    <mkdir dir="${build.dir}" />
+    <mkdir dir="${lib.dir}" />
+    <mkdir dir="${dist.dir}" />
+  </target>
+
+  <!-- download Ivy from web site so that it can be used even without any special installation -->
+  <target name="download-ivy" unless="skip.download">
+    <echo message="installing ivy..."/>
+    <get src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
+         dest="${ivy.jar.file}" usetimestamp="true"/>
+  </target>
+
+  <!-- try to load ivy here from local ivy dir, in case the user has not already dropped
+       it into ant's lib dir (note that the latter copy will always take precedence).
+       We will not fail as long as local lib dir exists (it may be empty) and
+       ivy is in at least one of ant's lib dir or the local lib dir. -->
+  <target name="install-ivy" depends="download-ivy" description="--> install ivy">
+    <path id="ivy.lib.path">
+      <fileset dir="${ivy.jar.dir}" includes="*.jar"/>
+    </path>
+    <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
+  </target>
+
+  <target name="resolve" depends="install-ivy" description="--> retreive dependencies with ivy">
+    <ivy:retrieve/>
+  </target>
+
+  <target name="report" depends="resolve" description="--> generates a report of dependencies">
+      <ivy:report todir="${build.dir}"/>
+  </target>
+
+  <target name="compile" depends="init" description="compile the source ">
+    <javac classpathref="lib.path.id" srcdir="${src.dir}/main/" destdir="${build.dir}" optimize="on" debug="on">
+      <compilerarg value="-Xlint:unchecked" />
+    </javac>
+    <copy todir="${build.dir}">
+      <fileset dir="${src.dir}/main/" excludes="**/*.java" />
+    </copy>
+  </target>
+
+  <target name="jar" depends="compile" description="generate the distribution">
+    <jar jarfile="${dist.dir}/${artifactId}-${version}.jar" basedir="${build.dir}" />
+  </target>
+
+  <target name="go" depends="resolve,compile,jar" />
+
+  <target name="dist" depends="jar,javadoc" description="generate the distribution">
+    <jar jarfile="${dist.dir}/${artifactId}-${version}-sources.jar" basedir="${src.dir}" />
+    <jar jarfile="${dist.dir}/${artifactId}-${version}-javadoc.jar" basedir="${javadoc.dir}" />
+  </target>
+
+  <target name="clean" description="clean up">
+    <delete dir="${build.dir}" />
+    <delete dir="${lib.dir}" />
+    <delete dir="${dist.dir}" />
+    <delete dir="${javadoc.dir}" />
+  </target>
+
+  <target name="javadoc">
+    <javadoc destdir="${javadoc.dir}" access="public" use="true" notree="false" nonavbar="false" noindex="false" splitindex="no" author="true" version="true" nodeprecatedlist="false" nodeprecated="false" classpathref="lib.path.id">
+      <fileset dir="src/main/">
+        <include name="**/*.java" />
+      </fileset>
+      <link href="http://java.sun.com/javase/6/docs/api/" />
+    </javadoc>
+    <copy todir="${javadoc.dir}">
+       <fileset dir="${src.dir}/main">
+      </fileset>
+    </copy>
+  </target>
+</project>

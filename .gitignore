@@ -39,3 +39,9 @@ pa-combiner
 pa-diagonal
 pa-init-ttable
 pa-dump-ttable
+
+# Java stuff
+java/build
+java/dist
+java/ivy/ivy.jar
+java/lib
