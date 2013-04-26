@@ -24,8 +24,12 @@ const WordId kLogLikelihoodKey = -5;
 // pair.
 class MapperSource {
  public:
-  explicit MapperSource(std::istream &input) : in_(input), done_(false) {
+  explicit MapperSource(std::istream &input) : in_(input), done_(false), counter_(0) {
     Next();
+  }
+
+  ~MapperSource() {
+    LOG(INFO) << "MapperSource[" << std::hex << this << "] " << std::dec << counter_ << " reads";
   }
 
   bool Done() const {
@@ -44,6 +48,7 @@ class MapperSource {
       std::istringstream strm(buf_.substr(sep + 1));
       PushWords(strm, tgt);
     }
+    ++counter_;
   }
 
   void Next() {
@@ -65,12 +70,17 @@ class MapperSource {
   std::istream &in_;
   bool done_;
   std::string buf_;
+  mutable size_t counter_;
 };
 
 class ReducerSource {
  public:
-  explicit ReducerSource(std::istream &input) : in_(input), done_(false) {
+  explicit ReducerSource(std::istream &input) : in_(input), done_(false), counter_(0) {
     Next();
+  }
+
+  ~ReducerSource() {
+    LOG(INFO) << "ReducerSource[" << std::hex << this << "] " << std::dec << counter_ << " reads";
   }
 
   bool Done() const {
@@ -88,10 +98,12 @@ class ReducerSource {
   void Read(TTableEntry *entry) const {
     std::istringstream strm(buf_);
     strm >> *entry;
+    ++counter_;
   }
 
   void Read(double *dest) const {
     *dest = DoubleFromInt64(boost::lexical_cast<int64_t>(buf_));
+    ++counter_;
   }
 
   void Next() {
@@ -115,16 +127,22 @@ class ReducerSource {
   bool done_;
   WordId cur_key_;
   std::string buf_;
+  mutable size_t counter_;
 };
 
 // Writes out key-value pairs for various purposes in textual
 // format. Currently this can be shared between mappers and reducers.
 class Sink {
  public:
-  explicit Sink(std::ostream &output) : out_(output) {}
+  explicit Sink(std::ostream &output) : out_(output), counter_(0) {}
+
+  ~Sink() {
+    LOG(INFO) << "Sink[" << std::hex << this << "] " << std::dec << counter_ << " writes";
+  }
 
   void WriteTTableEntry(WordId src, const TTableEntry &entry) {
     out_ << src << '\t' << entry << '\n';
+    ++counter_;
   }
 
   template <class It>
@@ -140,26 +158,32 @@ class Sink {
       ++begin;
     }
     out_ << '\n';
+    ++counter_;
   }
 
   void WriteToks(double toks) {
     out_ << kToksKey << '\t' << DoubleAsInt64(toks) << '\n';
+    ++counter_;
   }
 
   void WriteEmpFeat(double emp_feat) {
     out_ << kEmpFeatKey << '\t' << DoubleAsInt64(emp_feat) << '\n';
+    ++counter_;
   }
 
   void WriteLogLikelihood(double log_likelihood) {
     out_ << kLogLikelihoodKey << '\t' << DoubleAsInt64(log_likelihood) << '\n';
+    ++counter_;
   }
 
   void WriteTension(double tension) {
     out_ << tension << '\n';
+    ++counter_;
   }
 
  private:
   std::ostream &out_;
+  mutable size_t counter_;
 };
 
 typedef Sink MapperSink;
