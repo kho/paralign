@@ -6,12 +6,14 @@
 [ -d "$INPUT" ] || { echo "$INPUT does not exist or is not a directory"; exit 1; }
 mkdir -p "$WORKDIR"
 
+for i in pa-mapper pa-reducer pa-combiner pa-diagonal pa-env.sh; do
+    which $i > /dev/null 2> /dev/null || { echo "Cannot find $i! Is it on your PATH?"; exit 1; }
+done
+
 set -e
 
 BASE=`readlink -f "$0"`
 BASE=`dirname "$BASE"`
-
-export PATH=~/paralign/build/bin:$PATH
 
 if [ "x$PARTS" = x ]; then
     PARTS=1
