@@ -154,6 +154,10 @@ class Sink {
     out_ << kLogLikelihoodKey << '\t' << DoubleAsInt64(log_likelihood) << '\n';
   }
 
+  void WriteTension(double tension) {
+    out_ << tension << '\n';
+  }
+
  private:
   std::ostream &out_;
 };

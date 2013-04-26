@@ -35,6 +35,7 @@ stamp-h1
 estimate
 pa-mapper
 pa-reducer
+pa-combiner
 pa-diagonal
 pa-init-ttable
 pa-dump-ttable
