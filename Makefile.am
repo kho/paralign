@@ -5,10 +5,10 @@ noinst_LTLIBRARIES = libparalign.la
 
 libparalign_la_SOURCES = src/io.h src/options.h src/options.cc src/ttable.h src/types.h src/contrib/log.h src/contrib/da.h
 
-bin_PROGRAMS = estimate pa-mapper pa-reducer pa-combiner pa-diagonal pa-init-ttable pa-dump-ttable
+bin_PROGRAMS = pa-estimate pa-mapper pa-reducer pa-combiner pa-diagonal pa-init-ttable pa-dump-ttable
 bin_SCRIPTS = scripts/pa-env.sh scripts/pa-corpus.py
 
-estimate_SOURCES = src/estimate.cc
+pa_estimate_SOURCES = src/estimate.cc
 
 pa_mapper_SOURCES = src/mapper.cc
 pa_mapper_LDADD = libparalign.la
