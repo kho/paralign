@@ -23,8 +23,7 @@ class Mapper {
  public:
   Mapper(const Options &opts, const TTable &table, MapperSource *input, MapperSink *output)
       : opts_(opts), tbl_(table), in_(input), out_(output), pseudo_counts_(),
-        size_counts_(), toks_(0), emp_feat_(0), log_likelihood_(0),
-        prob_align_not_null_(1 - opts_.prob_align_null) {}
+        size_counts_(), toks_(0), emp_feat_(0), log_likelihood_(0) {}
 
   void Run() {
     vector<WordId> src, tgt;
@@ -54,7 +53,7 @@ class Mapper {
       }
       double az = 0;
       if (opts_.favor_diagonal)
-        az = DiagonalAlignment::ComputeZ(j+1, tgt.size(), src.size(), opts_.diagonal_tension) / prob_align_not_null_;
+        az = DiagonalAlignment::ComputeZ(j+1, tgt.size(), src.size(), opts_.diagonal_tension) / (1 - opts_.prob_align_null);
       for (unsigned i = 1; i <= src.size(); ++i) {
         if (opts_.favor_diagonal)
           prob_a_i = DiagonalAlignment::UnnormalizedProb(j + 1, i, tgt.size(), src.size(), opts_.diagonal_tension) / az;
@@ -105,7 +104,6 @@ class Mapper {
   double log_likelihood_;
 
   vector<double> probs_;
-  const double prob_align_not_null_;
 };
 } // namespace paralign
 
