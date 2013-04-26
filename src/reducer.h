@@ -119,7 +119,7 @@ class Reducer {
       const double base2_log_likelihood = log_likelihood_ / std::log(2);
       LOG(INFO) << "  log_e likelihood: " << log_likelihood_;
       LOG(INFO) << "  log_2 likelihood: " << base2_log_likelihood;
-      LOG(INFO) << "     cross entropy: " << base2_log_likelihood / toks_;
+      LOG(INFO) << "     cross entropy: " << -base2_log_likelihood / toks_;
       LOG(INFO) << "        perplexity: " << std::pow(2.0, -base2_log_likelihood / toks_);
       LOG(INFO) << " posterior al-feat: " << emp_feat_;
       LOG(INFO) << "       size counts: " << size_counts_.size();
