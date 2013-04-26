@@ -27,5 +27,5 @@ AC_CHECK_HEADERS([stdint.h])
 
 # Checks for library functions.
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile scripts/pa-hadoop.bash])
 AC_OUTPUT

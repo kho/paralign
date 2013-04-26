@@ -34,7 +34,10 @@ export pa_variational_bayes=$VB
 # Create initial parameters
 export pa_ttable_dir=$WORKDIR/0000
 mkdir -p "$WORKDIR/0000"
-pa-env.sh pa-init-ttable 2> "$WORKDIR/0000/init.err"
+for i in `seq 0 $(($PARTS-1))`; do
+    touch "$WORKDIR/0000/entry.$i"
+    touch "$WORKDIR/0000/index.$i"
+done
 
 for i in `seq 5`; do
     CUR="$WORKDIR/`printf %04d $i`"

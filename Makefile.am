@@ -5,10 +5,13 @@ noinst_LTLIBRARIES = libparalign.la
 
 libparalign_la_SOURCES = src/io.h src/options.h src/options.cc src/ttable.h src/types.h src/contrib/log.h src/contrib/da.h
 
-bin_PROGRAMS = pa-estimate pa-mapper pa-reducer pa-combiner pa-diagonal pa-init-ttable pa-dump-ttable
-bin_SCRIPTS = scripts/pa-env.sh scripts/pa-corpus.py
+bin_PROGRAMS = pa-estimate pa-dump-ttable
+bin_SCRIPTS = scripts/pa-corpus.py scripts/pa-hadoop.bash
 
-data_DATA = java/dist/paralign-$(VERSION).jar
+pkglibexec_PROGRAMS = pa-mapper pa-reducer pa-combiner pa-diagonal
+pkglibexec_SCRIPTS = scripts/pa-env.sh
+
+pkgdata_DATA = java/dist/$(PACKAGE)-$(VERSION).jar
 
 pa_estimate_SOURCES = src/estimate.cc
 
@@ -27,10 +30,6 @@ pa_diagonal_SOURCES = src/diagonal.cc src/reducer.h
 pa_diagonal_LDADD = libparalign.la
 pa_diagonal_LDFLAGS = -lhdfs $(LIBJVM)
 
-pa_init_ttable_SOURCES = src/init_ttable.cc
-pa_init_ttable_LDADD = libparalign.la
-pa_init_ttable_LDFLAGS = -lhdfs $(LIBJVM)
-
 pa_dump_ttable_SOURCES = src/dump_ttable.cc
 pa_dump_ttable_LDADD = libparalign.la
 
@@ -48,7 +47,7 @@ ttable_test_LDADD = libparalign.la
 ttable_test_CPPFLAGS = $(TESTCPPFLAGS)
 ttable_test_LDFLAGS = $(TESTLDFLAGS)
 
-java/dist/paralign-$(VERSION).jar:
+java/dist/$(PACKAGE)-$(VERSION).jar:
 	cd java; ant resolve; ant jar
 
 clean-local: clean-java
