@@ -39,7 +39,7 @@ pa-combiner
 pa-diagonal
 pa-init-ttable
 pa-dump-ttable
-pa-hadoop-bash.sh
+pa-hadoop.bash
 
 # Java stuff
 java/build
