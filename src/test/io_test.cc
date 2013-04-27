@@ -19,11 +19,13 @@ BOOST_AUTO_TEST_CASE( MapperSourceEmptyFile ) {
 }
 
 BOOST_AUTO_TEST_CASE( MapperSourceSingleLineNoBreak ) {
-  istringstream strm("1\t2 3");
+  istringstream strm("0\t1\t2 3");
   MapperSource in(strm);
   BOOST_CHECK_EQUAL(in.Done(), false);
+  size_t id = 1;
   vector<WordId> v, w;
-  in.Read(&v, &w);
+  in.Read(&id, &v, &w);
+  BOOST_CHECK_EQUAL(id, 0);
   BOOST_CHECK_EQUAL(v.size(), 1);
   BOOST_CHECK_EQUAL(v[0], 1);
   BOOST_CHECK_EQUAL(w.size(), 2);
@@ -35,9 +37,9 @@ BOOST_AUTO_TEST_CASE( MapperSourceSingleLineNoBreak ) {
 
 BOOST_AUTO_TEST_CASE( MapperSourceMultiLine ) {
   istringstream strm(
-      "1\t2\n"
-      "2\t3\n"
-      "4\t5\n");
+      "8\t1\t2\n"
+      "9\t2\t3\n"
+      "10\t4\t5\n");
   MapperSource in(strm);
   int read = 0;
   for (; !in.Done(); in.Next())
@@ -171,4 +173,27 @@ BOOST_AUTO_TEST_CASE( SinkWriteDouble ) {
   // end
   in.Next();
   BOOST_REQUIRE(in.Done());
+}
+
+BOOST_AUTO_TEST_CASE( ViterbiSinkWrite ) {
+  ostringstream os;
+  ViterbiSink out(os);
+  size_t id;
+  vector<SentSzPair> al;
+
+  id = 1;
+  out.WriteAlignment(id, al.begin(), al.end());
+
+  id = 2;
+  al.push_back(MkSzPair(0, 0));
+  out.WriteAlignment(id, al.begin(), al.end());
+
+  id = 4;
+  al.push_back(MkSzPair(1, 2));
+  out.WriteAlignment(id, al.begin(), al.end());
+
+  BOOST_CHECK_EQUAL(os.str(),
+                    "1\t\n"
+                    "2\t0-0\n"
+                    "4\t0-0 1-2\n");
 }

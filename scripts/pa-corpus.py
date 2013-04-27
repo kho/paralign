@@ -20,6 +20,6 @@ for line in sys.stdin:
     src = ' '.join(map(to_int, src.split()))
     tgt = ' '.join(map(to_int, tgt.split()))
     if src and tgt:
-        print src + '\t' + tgt
+        print str(n) + '\t' + src + '\t' + tgt
     else:
         print >> sys.stderr, 'skipping line %d: at least one side is empty' % n

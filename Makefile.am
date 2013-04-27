@@ -8,7 +8,7 @@ libparalign_la_SOURCES = src/io.h src/options.h src/options.cc src/ttable.h src/
 bin_PROGRAMS = pa-estimate pa-dump-ttable
 bin_SCRIPTS = scripts/pa-corpus.py scripts/pa-hadoop.bash
 
-pkglibexec_PROGRAMS = pa-mapper pa-reducer pa-combiner pa-diagonal
+pkglibexec_PROGRAMS = pa-mapper pa-reducer pa-combiner pa-diagonal pa-viterbi
 pkglibexec_SCRIPTS = scripts/pa-env.sh
 
 pkgdata_DATA = java/dist/$(PACKAGE)-$(VERSION).jar
@@ -32,6 +32,9 @@ pa_diagonal_LDFLAGS = -lhdfs $(LIBJVM)
 
 pa_dump_ttable_SOURCES = src/dump_ttable.cc
 pa_dump_ttable_LDADD = libparalign.la
+
+pa_viterbi_SOURCES = src/viterbi.cc
+pa_viterbi_LDADD = libparalign.la
 
 check_PROGRAMS = io_test ttable_test
 TESTCPPFLAGS = -I src $(AM_CPPFLAGS)

@@ -26,8 +26,11 @@ for i in pa-mapper pa-reducer pa-combiner pa-diagonal pa-env.sh; do
 done
 
 if [ "x$MAPS" = x ]; then
-    MAPS=`hadoop fs -ls "$INPUT" | grep "$INPUT" | cut -f8 -d' '`
-    MAPS=$(($MAPS/10000000))
+    MAPS=`hadoop fs -ls "$INPUT" | grep "$INPUT" | sed -e 's/  */ /g' | cut -f5 -d' '`
+    MAPS=`echo $MAPS / 10000000 | bc`
+    if [ "$MAPS" -lt 1 ]; then
+	MAPS=1
+    fi
 fi
 
 if [ "x$REDUCES" = x ]; then
@@ -46,19 +49,26 @@ if [ "x$ITERS" = x ]; then
     ITERS=5
 fi
 
+if [ "x$REVERSE" = x ]; then
+    REVERSE=no
+fi
+
 INFO "INPUT = $INPUT"
+INFO "VB = $VB"
+INFO "REVERSE = $REVERSE"
+INFO "ITERS = $ITERS"
 INFO "MAPS = $MAPS"
 INFO "REDUCES = $REDUCES"
-INFO "VB = $VB"
-INFO "ITERS = $ITERS"
 INFO "WORKDIR = $WORKDIR"
 INFO "MEM = $MEM"
+
 
 TENSION=4
 
 export pa_ttable_parts=$REDUCES
 export pa_variational_bayes=$VB
 export pa_diagonal_tension=$TENSION
+export pa_reverse=$REVERSE
 
 # Create initial parameters
 INFO "Creating initial parameters..."
@@ -94,7 +104,8 @@ for i in `seq $ITERS`; do
 	-cmdenv pa_ttable_parts="$REDUCES" \
 	-cmdenv pa_variational_bayes="$VB" \
 	-cmdenv pa_diagonal_tension="$TENSION" \
-	-cmdenv pa_ttable_dir=.
+	-cmdenv pa_ttable_dir=. \
+	-cmdenv pa_reverse="$REVERSE"
     # Run diagonal tension optimizer
     if [ "$i" -eq 1 ]; then
 	export pa_optimize_tension=no
@@ -112,3 +123,27 @@ for i in `seq $ITERS`; do
 	export pa_diagonal_tension=$TENSION
     fi
 done
+
+# Compute Viterbi alignment
+CUR="$WORKDIR/viterbi"
+# Prepare -files options
+FILES="$LIBEXEC/pa-viterbi"
+for j in `seq 0 $(($REDUCES-1))`; do
+    FILES="$FILES,$pa_ttable_dir/entry.$j,$pa_ttable_dir/index.$j"
+done
+# Streaming command
+/usr/bin/time -v hadoop jar "$STREAMING" \
+    -D mapreduce.job.name="align-`basename "$WORKDIR"`-viterbi" \
+    -D mapreduce.job.maps="$MAPS" \
+    -D mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator \
+    -D mapred.text.key.comparator.options=-n \
+    -files "$FILES" \
+    -mapper "/usr/bin/time -v ./pa-viterbi" \
+    -input "$INPUT" \
+    -output "$CUR" \
+    -numReduceTasks 1 \
+    -cmdenv pa_ttable_parts="$REDUCES" \
+    -cmdenv pa_variational_bayes="$VB" \
+    -cmdenv pa_diagonal_tension="$TENSION" \
+    -cmdenv pa_ttable_dir=. \
+    -cmdenv pa_reverse="$REVERSE"

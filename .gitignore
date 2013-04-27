@@ -40,6 +40,7 @@ pa-diagonal
 pa-init-ttable
 pa-dump-ttable
 pa-hadoop.bash
+pa-viterbi
 
 # Java stuff
 java/build

@@ -36,16 +36,20 @@ class MapperSource {
     return done_;
   }
 
-  void Read(std::vector<WordId> *src, std::vector<WordId> *tgt) const {
-    std::string::size_type sep = buf_.find('\t');
-    if (sep == std::string::npos)
+  void Read(size_t *id, std::vector<WordId> *src, std::vector<WordId> *tgt) const {
+    std::string::size_type sep0 = buf_.find('\t');
+    if (sep0 == std::string::npos)
+      LOG(FATAL) << "Invalid input line: " << buf_;
+    *id = boost::lexical_cast<size_t>(buf_.substr(0, sep0));
+    std::string::size_type sep1 = buf_.find('\t', sep0 + 1);
+    if (sep1 == std::string::npos)
       LOG(FATAL) << "Invalid input line: " << buf_;
     {
-      std::istringstream strm(buf_.substr(0, sep));
+      std::istringstream strm(buf_.substr(sep0 + 1, sep1 - sep0 - 1));
       PushWords(strm, src);
     }
     {
-      std::istringstream strm(buf_.substr(sep + 1));
+      std::istringstream strm(buf_.substr(sep1 + 1));
       PushWords(strm, tgt);
     }
     ++counter_;
@@ -189,8 +193,35 @@ class Sink {
 typedef Sink MapperSink;
 typedef Sink ReducerSink;
 
+// For writing out alignment points
+class ViterbiSink {
+ public:
+  explicit ViterbiSink(std::ostream &output) : out_(output), counter_(0) {}
 
+  ~ViterbiSink() {
+    LOG(INFO) << "ViterbiSink[" << std::hex << this << "] " << std::dec << counter_ << " writes";
+  }
 
+  template <class It>
+  void WriteAlignment(size_t id, It begin, It end) {
+    out_ << id << '\t';
+    bool first = true;
+    while (begin != end) {
+      if (first)
+        first = false;
+      else
+        out_ << ' ';
+      out_ << FirstSz(*begin) << '-' << SecondSz(*begin);
+      ++begin;
+    }
+    out_ << '\n';
+    ++counter_;
+  }
+
+ private:
+  std::ostream &out_;
+  size_t counter_;
+};
 } // paralign
 
 #endif  // _PARALIGN_IO_H_

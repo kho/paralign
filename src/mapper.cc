@@ -26,9 +26,10 @@ class Mapper {
         size_counts_(), toks_(0), emp_feat_(0), log_likelihood_(0) {}
 
   void Run() {
+    size_t id;
     vector<WordId> src, tgt;
     for (; !in_->Done(); in_->Next()) {
-      in_->Read(&src, &tgt);
+      in_->Read(&id, &src, &tgt);
       if (opts_.reverse) swap(src, tgt);
       Map(src, tgt);
     }
