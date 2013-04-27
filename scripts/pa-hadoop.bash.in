@@ -25,8 +25,13 @@ for i in pa-mapper pa-reducer pa-combiner pa-diagonal pa-env.sh; do
     [ -x "$LIBEXEC/$i" ] || { INFO "Cannot find $i under $LIBEXEC!"; exit 1; }
 done
 
-if [ "x$PARTS" = x ]; then
-    PARTS=1
+if [ "x$MAPS" = x ]; then
+    MAPS=`hadoop fs -ls "$INPUT" | grep "$INPUT" | cut -f8 -d' '`
+    MAPS=$(($MAPS/10000000))
+fi
+
+if [ "x$REDUCES" = x ]; then
+    REDUCES=1
 fi
 
 if [ "x$VB" = x ]; then
@@ -42,7 +47,8 @@ if [ "x$ITERS" = x ]; then
 fi
 
 INFO "INPUT = $INPUT"
-INFO "PARTS = $PARTS"
+INFO "MAPS = $MAPS"
+INFO "REDUCES = $REDUCES"
 INFO "VB = $VB"
 INFO "ITERS = $ITERS"
 INFO "WORKDIR = $WORKDIR"
@@ -50,30 +56,32 @@ INFO "MEM = $MEM"
 
 TENSION=4
 
-export pa_ttable_parts=$PARTS
+export pa_ttable_parts=$REDUCES
 export pa_variational_bayes=$VB
 export pa_diagonal_tension=$TENSION
 
 # Create initial parameters
 INFO "Creating initial parameters..."
 hadoop fs -mkdir -p "$WORKDIR/0000"
-for i in `seq 0 $(($PARTS-1))`; do
-    hadoop fs -put /dev/null "$WORKDIR/0000/index.$i"
-    hadoop fs -put /dev/null "$WORKDIR/0000/entry.$i"
+for i in `seq 0 $(($REDUCES-1))`; do
+    hadoop fs -put /dev/null "$WORKDIR/0000/index.$i" &
+    hadoop fs -put /dev/null "$WORKDIR/0000/entry.$i" &
 done
+wait
 
 export pa_ttable_dir=$WORKDIR/0000
 for i in `seq $ITERS`; do
     CUR="$WORKDIR/`printf %04d $i`"
     # Prepare -files options
-    FILES="$LIBEXEC/pa-mapper,$LIBEXEC/pa-combiner,$LIBEXEC/pa-reducer,$LIBEXEC/pa-env.sh,"
-    for j in `seq 0 $(($PARTS-1))`; do
+    FILES="$LIBEXEC/pa-mapper,$LIBEXEC/pa-combiner,$LIBEXEC/pa-reducer,$LIBEXEC/pa-env.sh"
+    for j in `seq 0 $(($REDUCES-1))`; do
 	FILES="$FILES,$pa_ttable_dir/entry.$j,$pa_ttable_dir/index.$j"
     done
     # Streaming command
     /usr/bin/time -v hadoop jar "$STREAMING" \
 	-D mapreduce.job.name="align-`basename "$WORKDIR"`-$i" \
 	-D mapreduce.reduce.memory.mb="$MEM" \
+	-D mapreduce.job.maps="$MAPS" \
 	-files "$FILES" \
 	-libjars "$JAR" \
 	-mapper "/usr/bin/time -v ./pa-mapper" \
@@ -82,10 +90,10 @@ for i in `seq $ITERS`; do
 	-partitioner "paralign.Partitioner1" \
 	-input "$INPUT" \
 	-output "$CUR" \
-	-numReduceTasks $PARTS \
-	-cmdenv pa_ttable_parts=$PARTS \
-	-cmdenv pa_variational_bayes=$VB \
-	-cmdenv pa_diagonal_tension=$TENSION \
+	-numReduceTasks "$REDUCES" \
+	-cmdenv pa_ttable_parts="$REDUCES" \
+	-cmdenv pa_variational_bayes="$VB" \
+	-cmdenv pa_diagonal_tension="$TENSION" \
 	-cmdenv pa_ttable_dir=.
     # Run diagonal tension optimizer
     if [ "$i" -eq 1 ]; then
