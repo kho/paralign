@@ -6,7 +6,7 @@ noinst_LTLIBRARIES = libparalign.la
 libparalign_la_SOURCES = src/io.h src/options.h src/options.cc src/ttable.h src/types.h src/contrib/log.h src/contrib/da.h
 
 bin_PROGRAMS = pa-estimate pa-dump-ttable
-bin_SCRIPTS = scripts/pa-corpus.py scripts/pa-hadoop.bash
+bin_SCRIPTS = scripts/pa-corpus.py scripts/pa-hadoop.bash scripts/pa-hadoop-test.bash
 
 pkglibexec_PROGRAMS = pa-mapper pa-reducer pa-combiner pa-diagonal pa-viterbi
 pkglibexec_SCRIPTS = scripts/pa-env.sh

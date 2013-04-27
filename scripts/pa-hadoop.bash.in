@@ -9,7 +9,7 @@ function INFO {
 [ "x$WORKDIR" != x ] || { INFO "Set WORKDIR!"; exit 1; }
 [ "x$INPUT" != x ] || { INFO "Set INPUT!"; exit 1; }
 
-echo "$WORKDIR" | grep -q "^hdfs://" || { INFO "WORKDIR must starts with hdfs://"; exit 1; }
+echo "$WORKDIR" | grep -q "^hdfs://" || { INFO "WORKDIR must start with hdfs://"; exit 1; }
 
 # FIXME: this assume the user only customizes prefix
 JAR=@prefix@/share/@PACKAGE@/@PACKAGE@-@VERSION@.jar
@@ -21,13 +21,13 @@ for i in hadoop; do
     which $i > /dev/null 2> /dev/null || { INFO "Cannot find $i! Is it on your PATH?"; exit 1; }
 done
 
-for i in pa-mapper pa-reducer pa-combiner pa-diagonal pa-env.sh; do
+for i in pa-mapper pa-reducer pa-combiner pa-diagonal pa-viterbi pa-env.sh; do
     [ -x "$LIBEXEC/$i" ] || { INFO "Cannot find $i under $LIBEXEC!"; exit 1; }
 done
 
 if [ "x$MAPS" = x ]; then
     MAPS=`hadoop fs -ls "$INPUT" | grep "$INPUT" | sed -e 's/  */ /g' | cut -f5 -d' '`
-    MAPS=`echo $MAPS / 10000000 | bc`
+    MAPS=`echo $MAPS / 5000000 | bc`
     if [ "$MAPS" -lt 1 ]; then
 	MAPS=1
     fi
@@ -119,9 +119,9 @@ for i in `seq $ITERS`; do
     if [ "$i" -gt 1 ]; then
 	[ "x$R" != x ] || { INFO "Tension optimization failed!"; exit 1; }
 	TENSION=$R
-	echo $TENSION | hadoop fs -put - "$CUR/diagonal.out"
-	export pa_diagonal_tension=$TENSION
     fi
+    echo $TENSION | hadoop fs -put - "$CUR/diagonal.out"
+    export pa_diagonal_tension=$TENSION
 done
 
 # Compute Viterbi alignment

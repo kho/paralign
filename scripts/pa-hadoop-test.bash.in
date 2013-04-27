@@ -1,0 +1,81 @@
+#!/bin/bash
+
+# Align test set
+
+set -e
+
+function INFO {
+    echo "INFO:" "$@" 1>&2
+}
+
+[ "x$INPUT" != x ] || { INFO "Set INPUT!"; exit 1; }
+[ "x$OUTPUT" != x ] || { INFO "Set OUTPUT!"; exit 1; }
+[ "x$MODEL" != x ] || { INFO "Set MODEL!"; exit 1; }
+
+echo "$MODEL" | grep -q "^hdfs://" || { INFO "MODEL must start with hdfs://"; exit 1; }
+
+# FIXME: this assume the user only customizes prefix
+JAR=@prefix@/share/@PACKAGE@/@PACKAGE@-@VERSION@.jar
+LIBEXEC=@prefix@/libexec/@PACKAGE@
+# FIXME: hardcoded streaming jar path
+STREAMING=/usr/lib/hadoop-mapreduce/hadoop-streaming.jar
+
+for i in hadoop; do
+    which $i > /dev/null 2> /dev/null || { INFO "Cannot find $i! Is it on your PATH?"; exit 1; }
+done
+
+for i in pa-viterbi; do
+    [ -x "$LIBEXEC/$i" ] || { INFO "Cannot find $i under $LIBEXEC!"; exit 1; }
+done
+
+if [ "x$MAPS" = x ]; then
+    MAPS=`hadoop fs -ls "$INPUT" | grep "$INPUT" | sed -e 's/  */ /g' | cut -f5 -d' '`
+    MAPS=`echo $MAPS / 5000000 | bc`
+    if [ "$MAPS" -lt 1 ]; then
+	MAPS=1
+    fi
+fi
+
+if [ "x$REVERSE" = x ]; then
+    REVERSE=no
+fi
+
+INFO "INPUT = $INPUT"
+INFO "OUTPUT = $OUTPUT"
+INFO "MAPS = $MAPS"
+INFO "MODEL = $MODEL"
+INFO "(MODEL) REVERSE = $REVERSE"
+
+TENSION=`hadoop fs -cat "$MODEL/diagonal.out"`
+REDUCES=`hadoop fs -ls "$MODEL/index".* | grep index | wc -l`
+
+INFO "(MODEL) REDUCES = $REDUCES"
+INFO "(MODEL) TENSION = $TENSION"
+
+export pa_ttable_parts=$REDUCES
+export pa_variational_bayes=no		# don't care
+export pa_diagonal_tension=$TENSION
+export pa_reverse=$REVERSE
+export pa_ttable_dir=$MODEL
+
+# Prepare -files options
+FILES="$LIBEXEC/pa-viterbi"
+for j in `seq 0 $(($REDUCES-1))`; do
+    FILES="$FILES,$pa_ttable_dir/entry.$j,$pa_ttable_dir/index.$j"
+done
+# Streaming command
+/usr/bin/time -v hadoop jar "$STREAMING" \
+    -D mapreduce.job.name="align-`basename "$OUTPUT"`-test" \
+    -D mapreduce.job.maps="$MAPS" \
+    -D mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator \
+    -D mapred.text.key.comparator.options=-n \
+    -files "$FILES" \
+    -mapper "/usr/bin/time -v ./pa-viterbi" \
+    -input "$INPUT" \
+    -output "$OUTPUT" \
+    -numReduceTasks 1 \
+    -cmdenv pa_ttable_parts="$REDUCES" \
+    -cmdenv pa_variational_bayes=no \
+    -cmdenv pa_diagonal_tension="$TENSION" \
+    -cmdenv pa_ttable_dir=. \
+    -cmdenv pa_reverse="$REVERSE"
