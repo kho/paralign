@@ -1,4 +1,4 @@
-AC_PREREQ([2.65])
+AC_PREREQ([2.63])
 AC_INIT([paralign], [0.1])
 AM_INIT_AUTOMAKE([foreign -Wall subdir-objects])
 
@@ -16,7 +16,7 @@ LIBJVM=`find "$JAVA_HOME/" -name libjvm.so`
 AS_IF([test x$LIBJVM = x], AC_MSG_ERROR([Cannot find libjvm.so! Set proper JAVA_HOME when configure.]))
 AC_SUBST([LIBJVM])
 
-BOOST_REQUIRE([1.44])
+BOOST_REQUIRE([1.41])
 BOOST_TEST
 
 # Checks for header files.
