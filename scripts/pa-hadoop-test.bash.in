@@ -14,9 +14,10 @@ function INFO {
 
 echo "$MODEL" | grep -q "^hdfs://" || { INFO "MODEL must start with hdfs://"; exit 1; }
 
-# FIXME: this assume the user only customizes prefix
-JAR=@prefix@/share/@PACKAGE@/@PACKAGE@-@VERSION@.jar
-LIBEXEC=@prefix@/libexec/@PACKAGE@
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+JAR="@datarootdir@/@PACKAGE@/@PACKAGE@-@VERSION@.jar"
+LIBEXEC="@libexecdir@/@PACKAGE@"
 # FIXME: hardcoded streaming jar path
 STREAMING=/usr/lib/hadoop-mapreduce/hadoop-streaming.jar
 
@@ -30,7 +31,7 @@ done
 
 if [ "x$MAPS" = x ]; then
     MAPS=`hadoop fs -ls "$INPUT" | grep "$INPUT" | sed -e 's/  */ /g' | cut -f5 -d' '`
-    MAPS=`echo $MAPS / 5000000 | bc`
+    MAPS=`echo $MAPS / 2500000 | bc`
     if [ "$MAPS" -lt 1 ]; then
 	MAPS=1
     fi

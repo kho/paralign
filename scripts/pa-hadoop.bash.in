@@ -11,9 +11,10 @@ function INFO {
 
 echo "$WORKDIR" | grep -q "^hdfs://" || { INFO "WORKDIR must start with hdfs://"; exit 1; }
 
-# FIXME: this assume the user only customizes prefix
-JAR=@prefix@/share/@PACKAGE@/@PACKAGE@-@VERSION@.jar
-LIBEXEC=@prefix@/libexec/@PACKAGE@
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+JAR="@datarootdir@/@PACKAGE@/@PACKAGE@-@VERSION@.jar"
+LIBEXEC="@libexecdir@/@PACKAGE@"
 # FIXME: hardcoded streaming jar path
 STREAMING=/usr/lib/hadoop-mapreduce/hadoop-streaming.jar
 
@@ -27,7 +28,7 @@ done
 
 if [ "x$MAPS" = x ]; then
     MAPS=`hadoop fs -ls "$INPUT" | grep "$INPUT" | sed -e 's/  */ /g' | cut -f5 -d' '`
-    MAPS=`echo $MAPS / 5000000 | bc`
+    MAPS=`echo $MAPS / 2500000 | bc`
     if [ "$MAPS" -lt 1 ]; then
 	MAPS=1
     fi
@@ -38,7 +39,7 @@ if [ "x$REDUCES" = x ]; then
 fi
 
 if [ "x$VB" = x ]; then
-    VB=no
+    VB=yes
 fi
 
 if [ "x$MEM" = x ]; then
@@ -76,8 +77,8 @@ hadoop fs -mkdir -p "$WORKDIR/0000"
 for i in `seq 0 $(($REDUCES-1))`; do
     hadoop fs -put /dev/null "$WORKDIR/0000/index.$i" &
     hadoop fs -put /dev/null "$WORKDIR/0000/entry.$i" &
+    wait
 done
-wait
 
 export pa_ttable_dir=$WORKDIR/0000
 for i in `seq $ITERS`; do
