@@ -73,12 +73,13 @@ export pa_reverse=$REVERSE
 # Create initial parameters
 INFO "Creating initial parameters..."
 TMP=`mktemp -d`
-for i in `seq 0 $(($REVERSE-1))`; do
+for i in `seq 0 $(($REDUCES-1))`; do
     touch "$TMP/index.$i"
     touch "$TMP/entry.$i"
 done
 hadoop fs -mkdir -p "$WORKDIR/0000"
-hadoop fs -put "$TMP/"* "$WORKDIR/0000"
+hadoop fs -put "$TMP"/* "$WORKDIR/0000"
+rm -r "$TMP"
 
 export pa_ttable_dir=$WORKDIR/0000
 for i in `seq $ITERS`; do
