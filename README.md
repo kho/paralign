@@ -52,7 +52,7 @@ Then, run the following to align with French as the source side,
 WORKDIR=hdfs://YOUR_WORK_DIR INPUT=CORPUS_NAME.bz2 ITERS=N pa-hadoop.bash
 ```
 
-- `WORKDIR` is where you want to put your intermediate data, consider putting them under a temporary directory since most of the data will be useless after a successful run. It must be a full path specify as a URI.
+- `WORKDIR` is where you want to put your intermediate data, consider putting them under a temporary directory since most of the data will be useless after a successful run. It must be a full path coded as a URI.
 - `INPUT` is what you have just put onto HDFS in last step.
 - `ITERS` is the number of EM iterations, if you don't specify the number, it defaults to 5, which is usually enough.
 
