@@ -6,9 +6,15 @@
 [ -d "$INPUT" ] || { echo "$INPUT does not exist or is not a directory"; exit 1; }
 mkdir -p "$WORKDIR"
 
-for i in pa-mapper pa-reducer pa-combiner pa-diagonal pa-env.sh; do
-    which $i > /dev/null 2> /dev/null || { echo "Cannot find $i! Is it on your PATH?"; exit 1; }
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+LIBEXEC="@libexecdir@/@PACKAGE@"
+
+for i in pa-mapper pa-reducer pa-combiner pa-diagonal pa-viterbi pa-env.sh; do
+    [ -x "$LIBEXEC/$i" ] || { INFO "Cannot find $i under $LIBEXEC!"; exit 1; }
 done
+
+export PATH=$LIBEXEC:$PATH
 
 set -e
 
@@ -20,7 +26,7 @@ if [ "x$PARTS" = x ]; then
 fi
 
 if [ "x$VB" = x ]; then
-    VB=no
+    VB=yes
 fi
 
 echo "INPUT = $INPUT"
