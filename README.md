@@ -52,9 +52,9 @@ Then, run the following to align with French as the source side,
 WORKDIR=hdfs://YOUR_WORK_DIR INPUT=CORPUS_NAME.bz2 ITERS=N pa-hadoop.bash
 ```
 
-- `WORKDIR` is where you want to put your intermediate data, consider putting them under a temporary directory since most of the data will be useless after a successful run. It must be a full path coded as a URI.
-- `INPUT` is what you have just put onto HDFS in last step.
-- `ITERS` is the number of EM iterations, if you don't specify the number, it defaults to 5, which is usually enough.
+- `WORKDIR` is where you want to put your intermediate data, consider putting them under a temporary directory since most of the data will be useless after a successful run. It must be a full path coded in URI.
+- `INPUT` is what you have just put onto HDFS in the last step.
+- `ITERS` is the number of EM iterations. If you don't specify the number, it defaults to 5, which is usually enough.
 
 Next, run the following to align with English as the source side,
 ```
@@ -73,9 +73,10 @@ hadoop fs -get hdfs://YOUR_WORK_DIR/viterbi/part-00000 fr-en.viterbi
 hadoop fs -get hdfs://YOUR_ANOTHER_WORK_DIR/viterbi/part-00000 fr-en.reverse.viterbi
 ```
 
-Each line of these two files is a tab-delimited key-value pair, with the key being sentence number and the value being the alignment points. If you don't have any sentence pair filtered by `pa-corpus.py`, simply take the values and do the normal grow-diag-final-and symmetrization.
+Each line of these two files is a tab-delimited key-value pair, with the key being the sentence number and the value being the alignment points. Simply take the values and do the normal grow-diag-final-and symmetrization.
 ```
 cut -f2 fr-en.viterbi fr-en.al
 cut -f2 fr-en.reverse.viterbi fr-en.reverse.al
 GDFA_TOOL_OF_YOUR_CHOICE fr-en.al fr-en.reverse.al
 ```
+If `pa-corpus.py` did not filter out any sentence pairs, you can now use the alignments with your paralle corpus right away. Otherwise, you will also need to take out the keys and extract these sentences from your corpus (therefore to save yourself from the trouble, filter beforehand).
