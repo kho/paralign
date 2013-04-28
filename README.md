@@ -1,5 +1,8 @@
 paralign
 ========
+paralign is parallel word alignment program for machine translation on Hadoop. It implements the word alignment algorithm in [Dyer et al. 2013].
+
+[Dyer et al. 2013]: http://www.ark.cs.cmu.edu/cdyer/fast_valign.pdf
 
 Dependencies
 ------------
