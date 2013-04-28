@@ -42,6 +42,7 @@ pa-dump-ttable
 pa-hadoop.bash
 pa-hadoop-test.bash
 pa-viterbi
+test-run.bash
 
 # Java stuff
 java/build
