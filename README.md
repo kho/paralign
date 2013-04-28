@@ -11,7 +11,7 @@ paralign depends on the following libraries:
 - hadoop
 - libhdfs
 
-Older versions of gcc (< 4.5) does not properly handle struct packing in templates, newer versions are recommended (or just use clang). If you have to use an old gcc, `ttable_test` should fail in two tests about size checks. This does not prevent the program from producing correct result, but the execution will require about 1/4 more memory, disk space and IO.
+Older versions of gcc (< 4.5) does not properly handle struct packing in templates, newer versions are recommended (or just use clang). If you have to use an old gcc, `ttable_test` should fail in two tests about size checks. This does not prevent the program from producing correct result, but the execution will require about 1/3 more memory, disk space and IO.
 
 How to build
 ------------
